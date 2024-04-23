@@ -24,7 +24,8 @@ class RandomMesh:
 
     Methods:
         generate_points(num_points): Generates random points within the polygons.
-        find_and_orient_polygons(abs_tol): Finds and orients the polygons.
+
+        find_and_orient_polygons(abs_tol): Finds and calculate the orientation of the polygons for the given borders.
     """
 
     def __init__(self, *borders, abs_tol=1e-04):
@@ -37,7 +38,7 @@ class RandomMesh:
 
     def generate_points(self, num_points):
         """
-        Generates random points within the polygons.
+        Generates random points within the polygons defined by the borders.
 
         Args:
             num_points (int): Number of points to generate.
@@ -82,7 +83,7 @@ class RandomMesh:
 
     def find_and_orient_polygons(self, abs_tol=1e-6):
         """
-        Finds and orients the polygons.
+        Finds and calculates the orientation of the polygons for the given borders.
 
         Args:
             abs_tol (float, optional): Absolute tolerance for geometric calculations. Defaults to 1e-6.
@@ -97,7 +98,7 @@ class RandomMesh:
 
 def exclude_nested_polygons(outer_polygons):
     """
-    Excludes nested polygons from the list of outer polygons.
+    refactor the nested polygons into disjoint polygons.
 
     Args:
         outer_polygons (list): List of outer Polygon objects.
@@ -114,9 +115,9 @@ def exclude_nested_polygons(outer_polygons):
     return outer_polygons
 
 
-def calculate_point_allocation(outer_polygons, num_points):
+def calculate_point_allocation(region_polygons, num_points):
     """
-    Calculates the point allocation for each outer polygon.
+    Calculates the point allocation for each region_polygons based on their area.
 
     Args:
         outer_polygons (list): List of outer Polygon objects.
@@ -125,8 +126,8 @@ def calculate_point_allocation(outer_polygons, num_points):
     Returns:
         list: List of integers representing the point allocation for each outer polygon.
     """
-    total_area = sum(poly.area for poly in outer_polygons)
-    return [int((poly.area / total_area) * num_points) for poly in outer_polygons]
+    total_area = sum(poly.area for poly in region_polygons)
+    return [int((poly.area / total_area) * num_points) for poly in region_polygons]
 
 
 def generate_regions(outer_polygons, hole_polygons):
@@ -157,12 +158,12 @@ def generate_regions(outer_polygons, hole_polygons):
     return outer_polygons
 
 
-def generate_points_within_polygons(outer_polygons, points_allocation, boundary_distance=1.0e-5):
+def generate_points_within_polygons(region_polygons, points_allocation, boundary_distance=1.0e-5):
     """
     Generates random points within the outer polygons.
 
     Args:
-        outer_polygons (list): List of outer Polygon objects.
+        region_polygons (list): List of outer Polygon objects.
         points_allocation (list): List of integers representing the point allocation for each outer polygon.
         boundary_distance (float, optional): Distance to buffer the polygons. Defaults to 1.0e-5.
 
@@ -173,7 +174,7 @@ def generate_points_within_polygons(outer_polygons, points_allocation, boundary_
     n_points = 0
     int_poly_lable = 10
 
-    for poly, num_pts in zip(outer_polygons, points_allocation):
+    for poly, num_pts in zip(region_polygons, points_allocation):
         poly = poly.buffer(-boundary_distance)
         prepare(poly)
         n_points += num_pts

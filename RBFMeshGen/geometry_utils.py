@@ -183,7 +183,7 @@ def find_polygons(borders, tolerance=1e-6):
 
 def calculate_orientation(list_border):
     """
-    Calculates the orientation of a list of borders.
+    Calculates the orientation of a list of borders that are assume to form a polygone.
 
     Args:
         list_border (list): A list of Border objects representing the borders.
