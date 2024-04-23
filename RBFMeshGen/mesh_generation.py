@@ -6,17 +6,45 @@ from shapely import prepare
 import random
 
 
-
 class RandomMesh:
-    def __init__(self, *borders,abs_tol=1e-04):
+    """
+    RandomMesh class for generating random points within polygons.
+
+    Args:
+        *borders: Variable length argument list of Border objects representing the borders of the polygons.
+        abs_tol (float, optional): Absolute tolerance for geometric calculations. Defaults to 1e-04.
+
+    Attributes:
+        borders (list): List of Border objects representing the borders of the polygons.
+        Points (list): List of generated MeshPoint objects.
+        Boundary_Points (list): List of generated MeshPoint objects on the boundary.
+        outer_polygons (list): List of outer Polygon objects.
+        holes_polygons (list): List of hole Polygon objects.
+        abs_tol (float): Absolute tolerance for geometric calculations.
+
+    Methods:
+        generate_points(num_points): Generates random points within the polygons.
+        find_and_orient_polygons(abs_tol): Finds and orients the polygons.
+    """
+
+    def __init__(self, *borders, abs_tol=1e-04):
         self.borders = borders
         self.Points = []
         self.Boundary_Points = []
         self.outer_polygons = []
         self.holes_polygons = []
-        self.abs_tol=1e-04
+        self.abs_tol = abs_tol
 
     def generate_points(self, num_points):
+        """
+        Generates random points within the polygons.
+
+        Args:
+            num_points (int): Number of points to generate.
+
+        Returns:
+            list: List of generated MeshPoint objects.
+        """
         polygons, orientations = self.find_and_orient_polygons(self.abs_tol)
 
         # Generate points along borders and classify them
@@ -26,14 +54,15 @@ class RandomMesh:
             for border in polygon:
                 border_point = border.generate_points()
                 if border.is_border:
-                   self.Boundary_Points.extend(border_point)
+                    self.Boundary_Points.extend(border_point)
                 polygon_points.extend([(p.x, p.y) for p in border_point])  # Add to polygon definition
             polygons_with_points.append(polygon_points)
 
         # Filter out the holes based on orientation
-        outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if orientation == 'CCW']
-        hole_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if orientation == 'CW']
-        
+        outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
+                          orientation == 'CCW']
+        hole_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
+                         orientation == 'CW']
 
         # Step 1: Exclude nested polygons
         outer_polygons = exclude_nested_polygons(outer_polygons)
@@ -41,7 +70,7 @@ class RandomMesh:
         self.holes_polygons = hole_polygons
 
         # Step 2: generate_regions
-        region_poly = generate_regions(outer_polygons,hole_polygons)
+        region_poly = generate_regions(outer_polygons, hole_polygons)
 
         # Step 3: Calculate points allocation
         points_allocation = calculate_point_allocation(region_poly, num_points)
@@ -51,13 +80,31 @@ class RandomMesh:
 
         return self.Points
 
-    def find_and_orient_polygons(self,abs_tol=1e-6):
-        polygons = find_polygons(self.borders,abs_tol)
+    def find_and_orient_polygons(self, abs_tol=1e-6):
+        """
+        Finds and orients the polygons.
+
+        Args:
+            abs_tol (float, optional): Absolute tolerance for geometric calculations. Defaults to 1e-6.
+
+        Returns:
+            tuple: Tuple containing the list of polygons and their orientations.
+        """
+        polygons = find_polygons(self.borders, abs_tol)
         orientations = [calculate_orientation(polygon) for polygon in polygons]
         return polygons, orientations
 
 
 def exclude_nested_polygons(outer_polygons):
+    """
+    Excludes nested polygons from the list of outer polygons.
+
+    Args:
+        outer_polygons (list): List of outer Polygon objects.
+
+    Returns:
+        list: List of outer Polygon objects with nested polygons excluded.
+    """
     # Sort polygons by area in descending order to handle larger polygons first
     outer_polygons = sorted(outer_polygons, key=lambda p: abs(p.area), reverse=True)
     for i in range(len(outer_polygons)):
@@ -66,12 +113,33 @@ def exclude_nested_polygons(outer_polygons):
                 outer_polygons[i] = outer_polygons[i].difference(outer_polygons[j])
     return outer_polygons
 
+
 def calculate_point_allocation(outer_polygons, num_points):
+    """
+    Calculates the point allocation for each outer polygon.
+
+    Args:
+        outer_polygons (list): List of outer Polygon objects.
+        num_points (int): Number of points to allocate.
+
+    Returns:
+        list: List of integers representing the point allocation for each outer polygon.
+    """
     total_area = sum(poly.area for poly in outer_polygons)
     return [int((poly.area / total_area) * num_points) for poly in outer_polygons]
 
 
 def generate_regions(outer_polygons, hole_polygons):
+    """
+    Generates the regions by subtracting hole polygons from outer polygons.
+
+    Args:
+        outer_polygons (list): List of outer Polygon objects.
+        hole_polygons (list): List of hole Polygon objects.
+
+    Returns:
+        list: List of modified outer Polygon objects.
+    """
     # Iterate over each outer polygon by index
     for i, poly in enumerate(outer_polygons):
         # Attempt to subtract each hole one by one
@@ -89,7 +157,18 @@ def generate_regions(outer_polygons, hole_polygons):
     return outer_polygons
 
 
-def generate_points_within_polygons(outer_polygons, points_allocation,boundary_distance = 1.0e-5):
+def generate_points_within_polygons(outer_polygons, points_allocation, boundary_distance=1.0e-5):
+    """
+    Generates random points within the outer polygons.
+
+    Args:
+        outer_polygons (list): List of outer Polygon objects.
+        points_allocation (list): List of integers representing the point allocation for each outer polygon.
+        boundary_distance (float, optional): Distance to buffer the polygons. Defaults to 1.0e-5.
+
+    Returns:
+        list: List of generated MeshPoint objects.
+    """
     points = []
     n_points = 0
     int_poly_lable = 10
