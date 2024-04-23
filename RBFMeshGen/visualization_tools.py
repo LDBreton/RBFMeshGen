@@ -60,13 +60,15 @@ def plot_all_polygons_in_one_figure(polygons):
     plt.show()
 
 
-def plot_points(points,title = 'Random Mesh Points by Label'):
+def plot_points(points, border_size= 5, interior_size=2, title = 'Random Mesh Points by Label'):
     """
     Plot points with different labels and border status.
 
     Args:
         points (list): List of Point objects.
         title (str): Title of the plot.
+        border_size (int): Size of border points.
+        interior_size (int): Size of interior points.
     Returns:
         None
     """
@@ -77,7 +79,7 @@ def plot_points(points,title = 'Random Mesh Points by Label'):
     is_border = [p.is_border for p in points]  # Extract border status
 
     # Define point sizes based on border status
-    sizes = [5 if border else 2 for border in is_border]  # Larger size for border points
+    sizes = [border_size if border else interior_size for border in is_border]  # Larger size for border points
 
     # Unique labels and their corresponding colors
     unique_labels = list(set(labels))
@@ -101,12 +103,15 @@ def plot_points(points,title = 'Random Mesh Points by Label'):
     plt.axis('equal')  # Set equal scaling by changing axis limits
     plt.show()
 
-def plot_mesh(Mesh, title = 'Random Mesh Points by Label'):
+def plot_mesh(Mesh,border_size= 5, interior_size=2, title = 'Random Mesh Points by Label'):
     """
     Plot points with different labels and border status.
 
     Args:
         points (list): List of Point objects.
+        title (str): Title of the plot.
+        border_size (int): Size of border points.
+        interior_size (int): Size of interior points.
 
     Returns:
         None
@@ -116,7 +121,7 @@ def plot_mesh(Mesh, title = 'Random Mesh Points by Label'):
         print("No points to plot")
         return 
     points = Mesh.Points + Mesh.Boundary_Points
-    plot_points(points,title=title)
+    plot_points(points,border_size=border_size,interior_size=interior_size,title=title)
 
 
 def plot_borders_with_orientation(borders):
