@@ -50,12 +50,14 @@ class RandomMesh:
 
         # Generate points along borders and classify them
         polygons_with_points = []
+        tentative_boundary_points = []
+
         for polygon in polygons:
             polygon_points = []
             for border in polygon:
                 border_point = border.generate_points()
                 if border.is_border:
-                    self.Boundary_Points.extend(border_point)
+                    tentative_boundary_points.extend(border_point)
                 polygon_points.extend([(p.x, p.y) for p in border_point])  # Add to polygon definition
             polygons_with_points.append(polygon_points)
 
@@ -78,7 +80,13 @@ class RandomMesh:
 
         # Step 4: Generate points
         self.Points.extend(generate_points_within_polygons(region_poly, points_allocation))
-
+        
+        #Unify the regions for boundary check
+        unified_region = unary_union([p.buffer(0) for p in region_poly])
+        
+        # Filter boundary points that are actually on the boundary of the unified region
+        self.Boundary_Points = [p for p in tentative_boundary_points if unified_region.boundary.contains(Point(p.x, p.y))]
+        
         return self.Points
 
     def find_and_orient_polygons(self, abs_tol=1e-6):
