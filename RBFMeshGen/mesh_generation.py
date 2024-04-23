@@ -181,19 +181,21 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
         list: List of generated MeshPoint objects.
     """
     points = []
-    n_points = 0
-    int_poly_lable = 10
+    total_points_generated = 0
 
-    for poly, num_pts in zip(region_polygons, points_allocation):
-        poly = poly.buffer(-boundary_distance)
-        prepare(poly)
-        n_points += num_pts
+    for i, (poly, num_pts) in enumerate(zip(region_polygons, points_allocation)):
+        poly = poly.buffer(-boundary_distance)  # Apply a buffer to slightly shrink the polygon
+        prepare(poly)  # Optional: prepare the polygon for faster operations if supported
+        target_points_count = total_points_generated + num_pts
         minx, miny, maxx, maxy = poly.bounds
-        int_poly_lable += 1
-        while len(points) < n_points:
+        
+        while len(points) < target_points_count:
             x = random.uniform(minx, maxx)
             y = random.uniform(miny, maxy)
             point = Point(x, y)
             if poly.contains_properly(point):
-                points.append(MeshPoint(x, y, int_poly_lable, False))
+                points.append(MeshPoint(x, y, f'region {i+1}', False))
+        
+        total_points_generated += num_pts
+
     return points
