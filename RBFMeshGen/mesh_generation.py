@@ -37,7 +37,7 @@ class RandomMesh:
         self.abs_tol = abs_tol
 
     def generate_points(self, num_points,boundary_distance=1.0e-5):
-        """
+        """-
         Generates random points within the polygons defined by the borders.
 
         Args:

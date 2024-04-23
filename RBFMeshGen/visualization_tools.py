@@ -1,7 +1,18 @@
 import matplotlib.pyplot as plt
-
+import numpy as np
+from .geometry_utils import MeshPoint
+from .mesh_generation import RandomMesh  
 
 def plot_each_polygon_separately(polygons):
+    """
+    Plot each polygon separately in a new figure.
+
+    Args:
+        polygons (list): List of Polygon objects.
+
+    Returns:
+        None
+    """
     for i, polygon in enumerate(polygons):
         fig, ax = plt.subplots()  # Create a new figure and axes for each polygon
         x, y = polygon.exterior.xy  # Get the x and y coordinates of the polygon's exterior
@@ -18,7 +29,17 @@ def plot_each_polygon_separately(polygons):
         ax.set_aspect('equal')  # Set aspect ratio to be equal to ensure the polygon is not distorted
         plt.show()
 
+
 def plot_all_polygons_in_one_figure(polygons):
+    """
+    Plot all polygons in a single figure.
+
+    Args:
+        polygons (list): List of Polygon objects.
+
+    Returns:
+        None
+    """
     fig, ax = plt.subplots()  # Create a single figure and axes object
     colors = plt.cm.viridis(np.linspace(0, 1, len(polygons)))  # Generate distinct colors
 
@@ -39,7 +60,16 @@ def plot_all_polygons_in_one_figure(polygons):
     plt.show()
 
 
-def plot_points(points):
+def plot_points(points,title = 'Random Mesh Points by Label'):
+    """
+    Plot points with different labels and border status.
+
+    Args:
+        points (list): List of Point objects.
+        title (str): Title of the plot.
+    Returns:
+        None
+    """
     # Prepare data for plotting
     x = [p.x for p in points]
     y = [p.y for p in points]
@@ -66,11 +96,38 @@ def plot_points(points):
 
     ax.set_xlabel('X Coordinate')
     ax.set_ylabel('Y Coordinate')
-    plt.title('Random Mesh Points by Label')
+    plt.title(title)
     plt.axis('equal')  # Set equal scaling by changing axis limits
     plt.show()
 
+def plot_mesh(Mesh, title = 'Random Mesh Points by Label'):
+    """
+    Plot points with different labels and border status.
+
+    Args:
+        points (list): List of Point objects.
+
+    Returns:
+        None
+    """
+
+    if len(Mesh.Points) == 0 or len(Mesh.Boundary_Points) == 0:
+        print("No points to plot")
+        return 
+    points = Mesh.Points + Mesh.Boundary_Points
+    plot_points(points,title=title)
+
+
 def plot_borders_with_orientation(borders):
+    """
+    Plot borders with orientation arrows.
+
+    Args:
+        borders (list): List of Border objects.
+
+    Returns:
+        None
+    """
     plt.figure(figsize=(10, 8))
     
     for border in borders:
