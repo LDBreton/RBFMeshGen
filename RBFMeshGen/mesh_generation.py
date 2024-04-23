@@ -21,7 +21,7 @@ class RandomMesh:
         outer_polygons (list): List of outer Polygon objects.
         holes_polygons (list): List of hole Polygon objects.
         abs_tol (float): Absolute tolerance for geometric calculations.
-
+        boundary_distance (float): Distance from random to the boundary.
     Methods:
         generate_points(num_points): Generates random points within the polygons.
 
@@ -36,7 +36,7 @@ class RandomMesh:
         self.holes_polygons = []
         self.abs_tol = abs_tol
 
-    def generate_points(self, num_points):
+    def generate_points(self, num_points,boundary_distance=1.0e-5):
         """
         Generates random points within the polygons defined by the borders.
 
@@ -79,13 +79,15 @@ class RandomMesh:
         points_allocation = calculate_point_allocation(region_poly, num_points)
 
         # Step 4: Generate points
-        self.Points.extend(generate_points_within_polygons(region_poly, points_allocation))
+        self.Points.extend(generate_points_within_polygons(region_poly, points_allocation,boundary_distance))
         
         #Unify the regions for boundary check
         unified_region = unary_union([p.buffer(0) for p in region_poly])
         
         # Filter boundary points that are actually on the boundary of the unified region
-        self.Boundary_Points = [p for p in tentative_boundary_points if unified_region.boundary.contains(Point(p.x, p.y))]
+        boundary_line = unified_region.boundary
+        self.Boundary_Points = [p for p in tentative_boundary_points if
+                                 boundary_line.distance(Point(p.x, p.y)) < boundary_distance]
         
         return self.Points
 
