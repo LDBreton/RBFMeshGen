@@ -1,9 +1,5 @@
 import numpy as np
-import random
-from shapely import Point, Polygon, LineString, prepare
 
-
-import matplotlib.pyplot as plt
 
 class MeshPoint:
     def __init__(self, x, y, label=0, is_border=True):
@@ -20,7 +16,8 @@ class MeshPoint:
         self.y = y
         self.label = label
         self.is_border = is_border
-        
+
+
 class Border:
     def __init__(self, parametric_function, label, t_start, t_end, is_border=True):
         """
@@ -62,7 +59,7 @@ class Border:
             self.end_point = self.parametric_function(self.t_start)
         else:
             self.start_point = self.parametric_function(self.t_start)
-            self.end_point = self.parametric_function(self.t_end)    
+            self.end_point = self.parametric_function(self.t_end)
         return self
 
     def get_midpoint(self):
@@ -84,8 +81,9 @@ class Border:
         """
         t_values = np.linspace(self.t_start, self.t_end, abs(self.n_segments) + 1, endpoint=True)
         points = [MeshPoint(x, y, self.label, self.is_border) for x, y in [self.parametric_function(t) for t in t_values]]
-        return points[:-1] if not self.reverse else points[::-1][:-1]     
-        
+        return points[:-1] if not self.reverse else points[::-1][:-1]
+
+
 def find_next_border(current_end, remaining_borders, abs_tol=1e-6):
     """
     Finds the next border connected to the current end point.
@@ -154,25 +152,23 @@ def find_polygons(borders, tolerance=1e-6):
         else:
             open_borders.append(border)
 
-
     # Form polygons from connected borders
     while open_borders:
         current = open_borders.pop(0)
         polygon = [current]
         found_multiple, next_border = find_next_border(current.end_point, open_borders, tolerance)
-        if found_multiple: open_borders.append(current)
-
+        if found_multiple:
+            open_borders.append(current)
         while next_border:
             current = next_border
             open_borders.remove(current)
             polygon.append(current)
             found_multiple, next_border = find_next_border(current.end_point, open_borders, tolerance)
-            if found_multiple: open_borders.append(current)
-  
+            if found_multiple:
+                open_borders.append(current)
             # Close the loop if it connects back to the start
             if next_border and is_close(next_border.end_point, polygon[0].start_point, tolerance):
                 polygon.append(next_border)
-                #open_borders.remove(next_border)
                 break
 
         if is_close(polygon[0].start_point, polygon[-1].end_point, tolerance):
@@ -183,7 +179,7 @@ def find_polygons(borders, tolerance=1e-6):
 
 def calculate_orientation(list_border):
     """
-    Calculates the orientation of a list of borders that are assume to form a polygone.
+    Calculates the orientation of a list of borders that are assume to form a polygon.
 
     Args:
         list_border (list): A list of Border objects representing the borders.
