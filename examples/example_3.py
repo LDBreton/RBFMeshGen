@@ -25,5 +25,5 @@ circle_s = Border(parametric_function=circular_border_func, label='circle', t_st
 random_mesh = RandomMesh(circle_s(300), upper(305), lower(305), abs_tol=1e-04)
 
 num_points = 10000
-points = random_mesh.generate_points(num_points)
+random_mesh.generate_points(num_points)
 plot_mesh(random_mesh)

@@ -23,7 +23,7 @@ random_mesh = RandomMesh(border_outer1(100), border_outer2(200), border_inner1(-
 
 # Generate points
 num_points = 10000
-points = random_mesh.generate_points(num_points)
+random_mesh.generate_points(num_points)
 
 # Plot the points
 plot_mesh(random_mesh)

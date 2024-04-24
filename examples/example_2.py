@@ -16,5 +16,5 @@ n = 100
 random_mesh = RandomMesh(C01(-n), C02(-n), C03(-n), C04(-n), C05(-n), C06(-n), C11(n), C12(n), C13(n))
 
 num_points = 10000
-points = random_mesh.generate_points(num_points)
+random_mesh.generate_points(num_points)
 plot_mesh(random_mesh)
