@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+
+from .mesh_generation import RandomMesh
 from .geometry_utils import MeshPoint
 
 
@@ -105,7 +107,7 @@ def plot_points(points, border_size=5, interior_size=2, title='Random Mesh Point
     plt.show()
 
 
-def plot_mesh(mesh, border_size=5, interior_size=2, title='Random Mesh Points by Label'):
+def plot_mesh(mesh: RandomMesh, border_size=5, interior_size=2, title='Random Mesh Points by Label'):
     """
     Plot points with different labels and border status.
 
