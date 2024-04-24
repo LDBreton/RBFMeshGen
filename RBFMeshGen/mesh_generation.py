@@ -1,4 +1,4 @@
-from .geometry_utils import MeshPoint, calculate_orientation, find_polygons
+from .geometry_utils import MeshPoint, calculate_orientation, find_polygons, Border
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from shapely import prepare
@@ -26,8 +26,8 @@ class RandomMesh:
         find_and_orient_polygons(abs_tol): Finds and calculate the orientation of the polygons for the given borders.
     """
 
-    def __init__(self, *borders, abs_tol=1e-04):
-        self.borders = borders
+    def __init__(self, *borders: Border, abs_tol=1e-04):
+        self.borders = list(borders)
         self.Points = []
         self.Boundary_Points = []
         self.outer_polygons = []

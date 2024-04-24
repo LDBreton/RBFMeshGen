@@ -2,14 +2,14 @@ import numpy as np
 
 
 class MeshPoint:
-    def __init__(self, x, y, label=0, is_border=True):
+    def __init__(self, x: float, y: float, label=0, is_border=True):
         """
         Represents a point in the mesh.
 
         Args:
             x (float): The x-coordinate of the point.
             y (float): The y-coordinate of the point.
-            label (int, optional): The label of the point. Defaults to 0.
+            label (int or string, optional): The label of the point. Defaults to 0.
             is_border (bool, optional): Indicates if the point is on the border. Defaults to True.
         """
         self.x = x
@@ -80,7 +80,10 @@ class Border:
             list: A list of MeshPoint objects representing the generated points.
         """
         t_values = np.linspace(self.t_start, self.t_end, abs(self.n_segments) + 1, endpoint=True)
-        points = [MeshPoint(x, y, self.label, self.is_border) for x, y in [self.parametric_function(t) for t in t_values]]
+        points = [
+            MeshPoint(x, y, self.label, self.is_border)
+            for x, y in [self.parametric_function(t) for t in t_values]
+        ]
         return points[:-1] if not self.reverse else points[::-1][:-1]
 
 
@@ -130,12 +133,12 @@ def is_close(point1, point2, tolerance=1e-6):
     return distance < tolerance
 
 
-def find_polygons(borders, tolerance=1e-6):
+def find_polygons(borders: list[Border], tolerance=1e-6):
     """
     Finds polygons formed by connected borders.
 
     Args:
-        borders (list): A list of Border objects representing the borders.
+        borders (list[Border]): A list of Border objects representing the borders.
         tolerance (float, optional): The tolerance for distance comparison. Defaults to 1e-6.
 
     Returns:

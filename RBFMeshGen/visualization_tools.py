@@ -93,7 +93,7 @@ def plot_points(points, border_size=5, interior_size=2, title='Random Mesh Point
 
     # Plotting
     fig, ax = plt.subplots()
-    scatter = ax.scatter(x, y, c=[color_map[label] for label in labels], s=sizes, alpha=0.6)  # Use 's' for size
+    ax.scatter(x, y, c=[color_map[label] for label in labels], s=sizes, alpha=0.6)
 
     # Create a legend with label colors
     legend_labels = {label: ax.plot([], [], marker="o", ls="", markersize=10, color=color_map[label])[0] for label in
