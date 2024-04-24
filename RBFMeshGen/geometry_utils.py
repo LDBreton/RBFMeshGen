@@ -25,7 +25,7 @@ class Border:
 
         Args:
             parametric_function (function): The parametric function that defines the border.
-            label (int): The label of the border.
+            label (str or int): The label of the border.
             t_start (float): The start parameter value of the border.
             t_end (float): The end parameter value of the border.
             is_border (bool, optional): Indicates if the border is a boundary. Defaults to True.

@@ -1,5 +1,4 @@
-import numpy as np
-from .geometry_utils import MeshPoint, Border, is_close, calculate_orientation,find_polygons
+from .geometry_utils import MeshPoint, calculate_orientation, find_polygons
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from shapely import prepare
@@ -21,7 +20,6 @@ class RandomMesh:
         outer_polygons (list): List of outer Polygon objects.
         holes_polygons (list): List of hole Polygon objects.
         abs_tol (float): Absolute tolerance for geometric calculations.
-        boundary_distance (float): Distance from random to the boundary.
     Methods:
         generate_points(num_points): Generates random points within the polygons.
 
@@ -36,11 +34,12 @@ class RandomMesh:
         self.holes_polygons = []
         self.abs_tol = abs_tol
 
-    def generate_points(self, num_points,boundary_distance=1.0e-5):
+    def generate_points(self, num_points, boundary_distance=1.0e-5):
         """-
         Generates random points within the polygons defined by the borders.
 
         Args:
+            boundary_distance:  distance from generated point to the boundary
             num_points (int): Number of points to generate.
 
         Returns:
@@ -79,16 +78,16 @@ class RandomMesh:
         points_allocation = calculate_point_allocation(region_poly, num_points)
 
         # Step 4: Generate points
-        self.Points.extend(generate_points_within_polygons(region_poly, points_allocation,boundary_distance))
-        
-        #Unify the regions for boundary check
+        self.Points.extend(generate_points_within_polygons(region_poly, points_allocation, boundary_distance))
+
+        # Unify the regions for boundary check
         unified_region = unary_union([p.buffer(0) for p in region_poly])
-        
+
         # Filter boundary points that are actually on the boundary of the unified region
         boundary_line = unified_region.boundary
         self.Boundary_Points = [p for p in tentative_boundary_points if
-                                 boundary_line.distance(Point(p.x, p.y)) < boundary_distance]
-        
+                                boundary_line.distance(Point(p.x, p.y)) < boundary_distance]
+
         return self.Points
 
     def find_and_orient_polygons(self, abs_tol=1e-6):
@@ -130,7 +129,7 @@ def calculate_point_allocation(region_polygons, num_points):
     Calculates the point allocation for each region_polygons based on their area.
 
     Args:
-        outer_polygons (list): List of outer Polygon objects.
+        region_polygons (list): List of outer Polygon objects.
         num_points (int): Number of points to allocate.
 
     Returns:
@@ -187,15 +186,15 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
         poly = poly.buffer(-boundary_distance)  # Apply a buffer to slightly shrink the polygon
         prepare(poly)  # Optional: prepare the polygon for faster operations if supported
         target_points_count = total_points_generated + num_pts
-        minx, miny, maxx, maxy = poly.bounds
-        
+        min_x, min_y, max_x, max_y = poly.bounds
+
         while len(points) < target_points_count:
-            x = random.uniform(minx, maxx)
-            y = random.uniform(miny, maxy)
+            x = random.uniform(min_x, max_x)
+            y = random.uniform(min_y, max_y)
             point = Point(x, y)
             if poly.contains_properly(point):
-                points.append(MeshPoint(x, y, f'region {i+1}', False))
-        
+                points.append(MeshPoint(x, y, f'region {i + 1}', False))
+
         total_points_generated += num_pts
 
     return points

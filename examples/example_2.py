@@ -1,4 +1,3 @@
-import numpy as np
 from RBFMeshGen import RandomMesh, plot_mesh, Border
 
 # Define each border using lambda functions as in your provided example:

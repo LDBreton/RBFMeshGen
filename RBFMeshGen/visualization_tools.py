@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from .geometry_utils import MeshPoint
-from .mesh_generation import RandomMesh  
+
 
 def plot_each_polygon_separately(polygons):
     """
@@ -23,7 +23,7 @@ def plot_each_polygon_separately(polygons):
             x, y = interior.xy
             ax.fill(x, y, "k")  # Fill holes with black color
 
-        ax.set_title(f'Polygon {i+1}')  # Title with polygon number
+        ax.set_title(f'Polygon {i + 1}')  # Title with polygon number
         ax.set_xlabel('Longitude')
         ax.set_ylabel('Latitude')
         ax.set_aspect('equal')  # Set aspect ratio to be equal to ensure the polygon is not distorted
@@ -45,7 +45,7 @@ def plot_all_polygons_in_one_figure(polygons):
 
     for i, polygon in enumerate(polygons):
         x, y = polygon.exterior.xy  # Get the x and y coordinates of the polygon's exterior
-        ax.fill(x, y, color=colors[i], alpha=0.5, label=f'Polygon {i+1}')  # Fill each polygon with a unique color
+        ax.fill(x, y, color=colors[i], alpha=0.5, label=f'Polygon {i + 1}')  # Fill each polygon with a unique color
 
         # Optionally plot the interiors (holes) if they exist
         for interior in polygon.interiors:
@@ -60,7 +60,7 @@ def plot_all_polygons_in_one_figure(polygons):
     plt.show()
 
 
-def plot_points(points, border_size= 5, interior_size=2, title = 'Random Mesh Points by Label'):
+def plot_points(points, border_size=5, interior_size=2, title='Random Mesh Points by Label'):
     """
     Plot points with different labels and border status.
 
@@ -83,7 +83,7 @@ def plot_points(points, border_size= 5, interior_size=2, title = 'Random Mesh Po
 
     # Unique labels and their corresponding colors
     unique_labels = list(set(labels))
-    
+
     colors = plt.cm.get_cmap('tab10', len(unique_labels))
 
     # Create a color map from labels to colors
@@ -94,7 +94,8 @@ def plot_points(points, border_size= 5, interior_size=2, title = 'Random Mesh Po
     scatter = ax.scatter(x, y, c=[color_map[label] for label in labels], s=sizes, alpha=0.6)  # Use 's' for size
 
     # Create a legend with label colors
-    legend_labels = {label: ax.plot([], [], marker="o", ls="", markersize=10, color=color_map[label])[0] for label in unique_labels}
+    legend_labels = {label: ax.plot([], [], marker="o", ls="", markersize=10, color=color_map[label])[0] for label in
+                     unique_labels}
     ax.legend(legend_labels.values(), legend_labels.keys(), title="Labels")
 
     ax.set_xlabel('X Coordinate')
@@ -103,12 +104,13 @@ def plot_points(points, border_size= 5, interior_size=2, title = 'Random Mesh Po
     plt.axis('equal')  # Set equal scaling by changing axis limits
     plt.show()
 
-def plot_mesh(Mesh,border_size= 5, interior_size=2, title = 'Random Mesh Points by Label'):
+
+def plot_mesh(mesh, border_size=5, interior_size=2, title='Random Mesh Points by Label'):
     """
     Plot points with different labels and border status.
 
     Args:
-        points (list): List of Point objects.
+        mesh (list): A RandomMesh object.
         title (str): Title of the plot.
         border_size (int): Size of border points.
         interior_size (int): Size of interior points.
@@ -117,11 +119,11 @@ def plot_mesh(Mesh,border_size= 5, interior_size=2, title = 'Random Mesh Points 
         None
     """
 
-    if len(Mesh.Points) == 0 or len(Mesh.Boundary_Points) == 0:
+    if len(mesh.Points) == 0 or len(mesh.Boundary_Points) == 0:
         print("No points to plot")
-        return 
-    points = Mesh.Points + Mesh.Boundary_Points
-    plot_points(points,border_size=border_size,interior_size=interior_size,title=title)
+        return
+    points = mesh.Points + mesh.Boundary_Points
+    plot_points(points, border_size=border_size, interior_size=interior_size, title=title)
 
 
 def plot_borders_with_orientation(borders):
@@ -135,20 +137,20 @@ def plot_borders_with_orientation(borders):
         None
     """
     plt.figure(figsize=(10, 8))
-    
+
     for border in borders:
         final_p = border.end_point
-        points = border.generate_points() + [MeshPoint(final_p[0],final_p[1])]
+        points = border.generate_points() + [MeshPoint(final_p[0], final_p[1])]
         x, y = zip(*[(p.x, p.y) for p in points])
-        
+
         plt.plot(x, y, label=border.label)
-        
+
         # Adding an arrow to show orientation
         # Selecting a point towards the middle of the border for the arrow
         mid_index = len(x) // 2
         plt.annotate('', xy=(x[mid_index + 1], y[mid_index + 1]), xytext=(x[mid_index], y[mid_index]),
                      arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=8))
-    
+
     plt.legend()
     plt.axis('equal')
     plt.xlabel('X')
