@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="RBFMeshGen",
-    version="0.1.0",
+    version="1.0.0",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
     description="A Python package for generating random meshes based on radial basis functions.",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/RBFMeshGen",
+    url="https://github.com/LDBreton/RBFMeshGen",
     packages=find_packages(),
     install_requires=[
         'numpy',        # For numerical operations
