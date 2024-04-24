@@ -16,8 +16,10 @@ def circular_border_func(t):
 
 # Creating borders
 upper = Border(parametric_function=upper_border_func, label='upper', t_start=0, t_end=1)
-lower = Border(parametric_function=lower_border_func, label='lower', t_start=1,
-               t_end=0)  # Notice the reversed t_start and t_end
+
+# Here, notice the reversed t_start and t_end
+lower = Border(parametric_function=lower_border_func, label='lower', t_start=1, t_end=0)
+
 circle_s = Border(parametric_function=circular_border_func, label='circle', t_start=0, t_end=2 * np.pi)
 
 random_mesh = RandomMesh(circle_s(300), upper(305), lower(305), abs_tol=1e-04)
