@@ -32,6 +32,7 @@ class RandomMesh:
         self.Boundary_Points = []
         self.outer_polygons = []
         self.holes_polygons = []
+        self.region_polygons = []
         self.abs_tol = abs_tol
 
     def generate_points(self, num_points, boundary_distance=1.0e-5):
@@ -73,6 +74,7 @@ class RandomMesh:
 
         # Step 2: generate_regions
         region_poly = generate_regions(outer_polygons, hole_polygons)
+        self.region_polygons = region_poly
 
         # Step 3: Calculate points allocation
         points_allocation = calculate_point_allocation(region_poly, num_points)
