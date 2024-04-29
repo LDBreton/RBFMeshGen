@@ -1,4 +1,4 @@
-from RBFMeshGen import RandomMesh, plot_mesh, Border
+from RBFMeshGen import RBFMesh, plot_mesh, Border
 
 # Define each border using lambda functions as in your provided example:
 C01 = Border(parametric_function=lambda t: (0, -1 + t), label='upper', t_start=0, t_end=1)
@@ -13,7 +13,7 @@ C13 = Border(parametric_function=lambda t: (1, -0.5 + 0.5 * t), label='inner', t
 
 # List all borders for possible use or inspection
 n = 100
-random_mesh = RandomMesh(C01(-n), C02(-n), C03(-n), C04(-n), C05(-n), C06(-n), C11(n), C12(n), C13(n))
+random_mesh = RBFMesh(C01(-n), C02(-n), C03(-n), C04(-n), C05(-n), C06(-n), C11(n), C12(n), C13(n))
 
 num_points = 10000
 random_mesh.generate_points(num_points)

@@ -5,9 +5,9 @@ from shapely import prepare
 import random
 
 
-class RandomMesh:
+class RBFMesh:
     """
-    RandomMesh class for generating random points within polygons.
+    RBFMesh class for generating random points within polygons.
 
     Args:
         *borders: Variable length argument list of Border objects representing the borders of the polygons.

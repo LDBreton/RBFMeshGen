@@ -2,7 +2,7 @@ from .geometry_utils import (
     MeshPoint, Border, is_close, find_polygons, calculate_orientation
 )
 from .mesh_generation import (
-    RandomMesh, exclude_nested_polygons, calculate_point_allocation,
+    RBFMesh, exclude_nested_polygons, calculate_point_allocation,
     generate_regions, generate_points_within_polygons
 )
 from .visualization_tools import (

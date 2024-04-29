@@ -1,5 +1,5 @@
 import numpy as np
-from RBFMeshGen import RandomMesh, plot_mesh, Border
+from RBFMeshGen import RBFMesh, plot_mesh, Border
 
 
 # Define a parametric function for a circle
@@ -19,7 +19,7 @@ border_inner1 = Border(parametric_function=lambda t: circle_parametric_function(
                        t_end=2 * np.pi)
 
 # Generate a random mesh
-random_mesh = RandomMesh(border_outer1(100), border_outer2(200), border_inner1(-100))
+random_mesh = RBFMesh(border_outer1(100), border_outer2(200), border_inner1(-100))
 
 # Generate points
 num_points = 10000
