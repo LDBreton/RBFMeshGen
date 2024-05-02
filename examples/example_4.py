@@ -18,7 +18,7 @@ Circle2 = Border(parametric_function=lambda t: circle_parametric_function(outer_
                  t_start=0,
                  t_end=2.0 * np.pi)
 
-Circle3 = Border(parametric_function=lambda t: circle_parametric_function(outer_radius, [0, -1], t), label=1,
+Circle3 = Border(parametric_function=lambda t: circle_parametric_function(outer_radius, [0, 1], t), label=1,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
