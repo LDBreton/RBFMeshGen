@@ -34,17 +34,37 @@ class RBFMesh:
         self.holes_polygons = []
         self.region_polygons = []
         self.abs_tol = abs_tol
+        self.process_polygons()  # Process polygons during initialization
 
-    def generate_points(self, num_points, boundary_distance=1.0e-5):
-        """-
-        Generates random points within the polygons defined by the borders.
+    def process_polygons(self):
+        """
+        Processes polygons to prepare them for point generation by classifying
+        them into outer polygons and holes, and then refining them to ensure
+        that they are properly nested and non-overlapping. This method sets up
+        the initial geometric configuration by finding polygons based on the
+        provided borders, classifying them based on orientation, and generating
+        points along these borders.
 
-        Args:
-            boundary_distance:  distance from generated point to the boundary
-            num_points (int): Number of points to generate.
+        The method performs several key operations:
+        1. Identifies and orients polygons based on the input borders, distinguishing
+           between counter-clockwise (outer polygons) and clockwise (holes).
+        2. Generates points along each border and collects these points, noting
+           which are on boundary borders.
+        3. Excludes nested polygons to simplify the outer boundary definitions.
+        4. Subtracts hole polygons from outer polygons to finalize distinct regions.
+        5. Creates a unified region from these polygons to filter boundary points
+           accurately based on their proximity to the actual boundary.
 
-        Returns:
-            list: List of generated MeshPoint objects.
+        Modifies:
+            self.outer_polygons: List of shapely.geometry.Polygon objects representing the outer boundaries.
+            self.holes_polygons: List of shapely.geometry.Polygon objects representing the holes.
+            self.region_polygons: List of shapely.geometry.Polygon objects representing the final regions
+                                  after subtraction of holes from the outer polygons.
+            self.Boundary_Points: List of MeshPoint objects that are confirmed to be on the boundary of the
+                                  unified region, adjusted by the absolute tolerance.
+
+        This setup is crucial for ensuring that the subsequent point generation by `generate_points`
+        occurs within properly defined and non-overlapping geometric regions.
         """
         polygons, orientations = self.find_and_orient_polygons(self.abs_tol)
 
@@ -64,31 +84,40 @@ class RBFMesh:
         # Filter out the holes based on orientation
         outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
                           orientation == 'CCW']
-        hole_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
-                         orientation == 'CW']
+        self.holes_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
+                               orientation == 'CW']
 
         # Step 1: Exclude nested polygons
-        outer_polygons = exclude_nested_polygons(outer_polygons)
-        self.outer_polygons = outer_polygons
-        self.holes_polygons = hole_polygons
+        self.outer_polygons = exclude_nested_polygons(outer_polygons)
+        self.outer_polygons = self.outer_polygons
 
         # Step 2: generate_regions
-        region_poly = generate_regions(outer_polygons, hole_polygons)
-        self.region_polygons = region_poly
-
-        # Step 3: Calculate points allocation
-        points_allocation = calculate_point_allocation(region_poly, num_points)
-
-        # Step 4: Generate points
-        self.Points.extend(generate_points_within_polygons(region_poly, points_allocation, boundary_distance))
+        self.region_polygons = generate_regions(self.outer_polygons, self.holes_polygons)
 
         # Unify the regions for boundary check
-        unified_region = unary_union([p.buffer(0) for p in region_poly])
+        unified_region = unary_union([p.buffer(0) for p in self.region_polygons])
 
         # Filter boundary points that are actually on the boundary of the unified region
         boundary_line = unified_region.boundary
         self.Boundary_Points = [p for p in tentative_boundary_points if
-                                boundary_line.distance(Point(p.x, p.y)) < boundary_distance]
+                                boundary_line.distance(Point(p.x, p.y)) < self.abs_tol]
+
+    def generate_points(self, num_points, boundary_distance=1.0e-5):
+        """-
+        Generates random points within the polygons defined by the borders.
+
+        Args:
+            boundary_distance:  distance from generated point to the boundary
+            num_points (int): Number of points to generate.
+
+        Returns:
+            list: List of generated MeshPoint objects.
+        """
+        # Step 1: Calculate points allocation
+        points_allocation = calculate_point_allocation(self.region_polygons, num_points)
+
+        # Step 2: Generate points
+        self.Points.extend(generate_points_within_polygons(self.region_polygons, points_allocation, boundary_distance))
 
         return self.Points
 
