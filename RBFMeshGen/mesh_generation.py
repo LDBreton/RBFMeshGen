@@ -50,7 +50,7 @@ class RBFMesh:
            between counter-clockwise (outer polygons) and clockwise (holes).
         2. Generates points along each border and collects these points, noting
            which are on boundary borders.
-        3. Excludes nested polygons to simplify the outer boundary definitions.
+        3. Resolve overlaps among multiple polygons by calculating unique and intersecting areas.
         4. Subtracts hole polygons from outer polygons to finalize distinct regions.
         5. Creates a unified region from these polygons to filter boundary points
            accurately based on their proximity to the actual boundary.
@@ -66,7 +66,7 @@ class RBFMesh:
         This setup is crucial for ensuring that the subsequent point generation by `generate_points`
         occurs within properly defined and non-overlapping geometric regions.
         """
-        polygons, orientations = self.find_and_orient_polygons(self.abs_tol)
+        polygons = find_polygons(self.borders, self.abs_tol)
 
         # Generate points along borders and classify them
         polygons_with_points = []
@@ -82,13 +82,14 @@ class RBFMesh:
             polygons_with_points.append(polygon_points)
 
         # Filter out the holes based on orientation
-        self.outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
-                          orientation == 'CCW']
-        self.holes_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
-                               orientation == 'CW']
+        polygons = [Polygon(poly) for poly in polygons_with_points]
+
+        # Determine orientation and classify as outer or holes
+        self.outer_polygons = [poly for poly in polygons if poly.exterior.is_ccw]
+        self.holes_polygons = [poly for poly in polygons if not poly.exterior.is_ccw]
 
         # Step 1: Exclude nested polygons
-        self.outer_polygons = exclude_nested_polygons(self.outer_polygons)
+        self.outer_polygons = resolve_multiple_overlaps(self.outer_polygons)
 
         # Step 2: generate_regions
         self.region_polygons = generate_regions(self.outer_polygons, self.holes_polygons)
@@ -120,19 +121,49 @@ class RBFMesh:
 
         return self.Points
 
-    def find_and_orient_polygons(self, abs_tol=1e-6):
-        """
-        Finds and calculates the orientation of the polygons for the given borders.
 
-        Args:
-            abs_tol (float, optional): Absolute tolerance for geometric calculations. Defaults to 1e-6.
+def resolve_multiple_overlaps(polygons):
+    """
+    Resolve overlaps among multiple polygons by calculating unique and intersecting areas.
+    This method ensures that intersections are only counted once by subtracting the cumulative
+    intersection areas found in previous steps from the current calculations.
 
-        Returns:
-            tuple: Tuple containing the list of polygons and their orientations.
-        """
-        polygons = find_polygons(self.borders, abs_tol)
-        orientations = [calculate_orientation(polygon) for polygon in polygons]
-        return polygons, orientations
+    Args:
+        polygons (list of shapely.geometry.Polygon): List of Polygon objects that might overlap.
+
+    Returns:
+        list of shapely.geometry.Polygon: List of disjoint Polygon objects including unique areas and individual intersection areas without duplicates.
+    """
+    unique_areas = []  # List to hold unique areas of each polygon
+    intersections = []  # List to hold intersections
+
+    # First, calculate the union of all polygons to get the complete coverage area
+    for i, polygon in enumerate(polygons):
+        # Calculate the intersection with the union of all other polygons
+        others = [p for j, p in enumerate(polygons) if j != i]
+        if others:
+            union_of_others = unary_union(others)
+            intersections_union = unary_union(intersections) if intersections else None
+
+            # Calculate the new intersection, ensuring no double-counting
+            new_intersection = polygon.intersection(union_of_others)
+            if intersections_union:
+                new_intersection = new_intersection.difference(intersections_union)
+
+            unique_area = polygon.difference(union_of_others)
+
+            if not new_intersection.is_empty:
+                intersections.append(new_intersection)
+            if not unique_area.is_empty:
+                unique_areas.append(unique_area)
+        else:
+            # If no other polygons, the polygon itself is unique
+            unique_areas.append(polygon)
+
+    # Combine unique areas and non-duplicated intersections into a single list
+    result = unique_areas + intersections
+
+    return result
 
 
 def exclude_nested_polygons(outer_polygons):
