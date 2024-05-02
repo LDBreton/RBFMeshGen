@@ -82,14 +82,13 @@ class RBFMesh:
             polygons_with_points.append(polygon_points)
 
         # Filter out the holes based on orientation
-        outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
+        self.outer_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
                           orientation == 'CCW']
         self.holes_polygons = [Polygon(poly) for poly, orientation in zip(polygons_with_points, orientations) if
                                orientation == 'CW']
 
         # Step 1: Exclude nested polygons
-        self.outer_polygons = exclude_nested_polygons(outer_polygons)
-        self.outer_polygons = self.outer_polygons
+        self.outer_polygons = exclude_nested_polygons(self.outer_polygons)
 
         # Step 2: generate_regions
         self.region_polygons = generate_regions(self.outer_polygons, self.holes_polygons)
