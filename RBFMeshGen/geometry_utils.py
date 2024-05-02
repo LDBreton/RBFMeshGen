@@ -179,27 +179,3 @@ def find_polygons(borders: list[Border], tolerance=1e-6):
 
     return standalone_polygons + polygon_groups
 
-
-def calculate_orientation(list_border):
-    """
-    Calculates the orientation of a list of borders that are assume to form a polygon.
-
-    Args:
-        list_border (list): A list of Border objects representing the borders.
-
-    Returns:
-        str: The orientation of the borders, either 'CCW' (counter-clockwise) or 'CW' (clockwise).
-    """
-    total_area = 0
-    for border in list_border:
-        start_point = border.start_point
-        midpoint = border.get_midpoint()
-        end_point = border.end_point
-        points = [start_point, midpoint, end_point]
-
-        # Calculate area using the shoelace formula
-        for i in range(len(points)-1):
-            x1, y1 = points[i]
-            x2, y2 = points[i + 1]
-            total_area += (x1 * y2 - y1 * x2)
-    return 'CCW' if total_area / 2.0 > 0 else 'CW'

@@ -1,4 +1,4 @@
-from .geometry_utils import MeshPoint, calculate_orientation, find_polygons, Border
+from .geometry_utils import MeshPoint, find_polygons, Border
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from shapely import prepare

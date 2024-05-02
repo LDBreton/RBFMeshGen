@@ -1,5 +1,5 @@
 from .geometry_utils import (
-    MeshPoint, Border, is_close, find_polygons, calculate_orientation
+    MeshPoint, Border, is_close, find_polygons
 )
 from .mesh_generation import (
     RBFMesh, exclude_nested_polygons, calculate_point_allocation,
