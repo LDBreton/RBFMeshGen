@@ -89,6 +89,9 @@ class RBFMesh:
         self.holes_polygons = [poly for poly in polygons if not poly.exterior.is_ccw]
 
         # Step 1: Exclude nested polygons
+        self.outer_polygons = exclude_nested_polygons(self.outer_polygons)
+
+        # Step 1.5: Resolve overlaps among multiple polygons
         self.outer_polygons = resolve_multiple_overlaps(self.outer_polygons)
 
         # Step 2: generate_regions

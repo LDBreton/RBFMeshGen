@@ -10,15 +10,15 @@ def circle_parametric_function(radius, center, t):
 # Define the borders of the mesh
 outer_radius = 1.0
 
-Circle1 = Border(parametric_function=lambda t: circle_parametric_function(outer_radius, [0, 0], t), label=1,
+Circle1 = Border(parametric_function=lambda t: circle_parametric_function(1, [0, 0], t), label=1,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
-Circle2 = Border(parametric_function=lambda t: circle_parametric_function(outer_radius, [1, 0], t), label=1,
+Circle2 = Border(parametric_function=lambda t: circle_parametric_function(0.8, [0, 0], t), label=1,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
-Circle3 = Border(parametric_function=lambda t: circle_parametric_function(outer_radius, [0, -1], t), label=1,
+Circle3 = Border(parametric_function=lambda t: circle_parametric_function(0.3, [0, 0], t), label=1,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
