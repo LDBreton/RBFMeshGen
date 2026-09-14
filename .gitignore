@@ -2,3 +2,5 @@ __pycache__/
 *.py[cod]
 .idea/
 RBFMeshGen.egg-info/
+.venv/
+.vscode/

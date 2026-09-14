@@ -86,7 +86,7 @@ def plot_points(points, border_size=5, interior_size=2, title='Random Mesh Point
     # Unique labels and their corresponding colors
     unique_labels = list(set(labels))
 
-    colors = plt.cm.get_cmap('tab10', len(unique_labels))
+    colors = plt.colormaps.get_cmap('tab10').resampled(len(unique_labels))
 
     # Create a color map from labels to colors
     color_map = {label: colors(i) for i, label in enumerate(unique_labels)}
