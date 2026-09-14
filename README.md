@@ -1,6 +1,6 @@
 # RBFMeshGen
 
-RBFMeshGen is a Python package designed for the generation and visualization of random mesh points within specified geometric boundaries using Radial Basis Functions (RBF) and other mesh generation techniques. The package provides tools to create, manipulate, and visualize complex mesh structures effectively in Python.
+RBFMeshGen generates and visualizes random 2D point clouds within parametric geometric boundaries. It uses Shapely for region operations and rejection sampling for interior points. It does not currently implement RBF interpolation or mesh connectivity.
 
 ## Features
 
@@ -11,12 +11,34 @@ RBFMeshGen is a Python package designed for the generation and visualization of 
 
 ## Installation
 
-To install RBFMeshGen, simply clone this repository and use the setup file to install the package:
+Requires Python 3.9+, NumPy, Matplotlib 3.6+, and Shapely 2.0+.
+From the cloned repository directory, install the local code in editable mode.
+On Windows PowerShell:
 
-```bash
-pip install RBFMeshGen
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe .\examples\example_1.py
 ```
 
+If `.venv` already exists, skip its creation. Python 3.13 is an example of a
+supported interpreter; select an installed compatible version if needed.
+On Linux/macOS, use `python3 -m venv .venv` and `.venv/bin/python` instead.
+
+## Project structure and examples
+
+- `RBFMeshGen/geometry_utils.py`: points, parametric borders, and closed contour discovery.
+- `RBFMeshGen/mesh_generation.py`: region processing and random interior points.
+- `RBFMeshGen/visualization_tools.py`: Matplotlib plots.
+- `RBFMeshGen/__init__.py`: public imports.
+- `examples/example_1.py`: circular annulus.
+- `examples/example_2.py`: connected straight borders.
+- `examples/example_3.py`: circular domain with an airfoil-shaped hole.
+- `examples/example_4.py`: overlapping circles.
+- `examples/example_5.py`: nested circles with positive orientation, not holes.
+
+Run any example by substituting its filename in the command above. Each opens
+a Matplotlib figure. Close the figure to finish the script.
 
 ## Usage
 
@@ -54,11 +76,30 @@ plot_mesh(random_mesh)
 
 ![Output Mesh Visualization](docs/images/Example_1.png)
 
+`Border(n)` uses `abs(n)` segments; a negative value reverses traversal.
+Counterclockwise closed contours define regions, and clockwise contours define holes.
+`mesh.Points` holds interior points; `mesh.Boundary_Points` holds boundary points.
+Each point has `x`, `y`, `label`, and `is_border` attributes.
+
+`generate_points(n)` adds exactly `n` interior points, allocated by region area.
+Repeated calls append by default for compatibility. Use
+`mesh.generate_points(n, append=False)` to replace existing interior points.
+The count excludes boundary points. Set `random.seed(42)` before generation
+(after `import random`) for reproducible sampling.
+Invalid counts and a `boundary_distance` that eliminates a requested sampling
+region raise `ValueError` without replacing existing points.
+
+Run regression tests from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
 ## Contributing
 
 Contributions to RBFMeshGen are welcome! Please feel free to fork the repository, make changes, and submit pull requests. You can also open issues to discuss potential changes or report bugs.
 
 ## License
-RBFMeshGen is released under the MIT License. See the LICENSE file in the repository for full details.
+RBFMeshGen is released under the MIT License. See [License.txt](License.txt) for full details.
 
 

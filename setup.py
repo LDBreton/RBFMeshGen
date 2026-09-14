@@ -5,20 +5,20 @@ setup(
     version="1.0.5",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
-    description="A Python package for generating random meshes based on radial basis functions.",
-    long_description=open('README.md').read(),
+    description="Generate random 2D point clouds within parametric geometric boundaries.",
+    long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/LDBreton/RBFMeshGen",
     packages=find_packages(),
     install_requires=[
         'numpy',        # For numerical operations
-        'matplotlib',   # For any plotting capabilities
-        'shapely'       # Shapely for geometrical operations
+        'matplotlib>=3.6',   # Colormap registry and resampling APIs
+        'shapely>=2.0'       # prepare and contains_properly APIs
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.9',
 )

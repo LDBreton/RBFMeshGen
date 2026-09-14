@@ -3,6 +3,8 @@ from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 from shapely import prepare
 import random
+import math
+from numbers import Integral
 
 
 class RBFMesh:
@@ -105,13 +107,15 @@ class RBFMesh:
         self.Boundary_Points = [p for p in tentative_boundary_points if
                                 boundary_line.distance(Point(p.x, p.y)) < self.abs_tol]
 
-    def generate_points(self, num_points, boundary_distance=1.0e-5):
-        """-
+    def generate_points(self, num_points, boundary_distance=1.0e-5, *, append=True):
+        """
         Generates random points within the polygons defined by the borders.
 
         Args:
             boundary_distance:  distance from generated point to the boundary
             num_points (int): Number of points to generate.
+            append (bool): Keep existing interior points (default True).
+                Set False to replace them after successful generation.
 
         Returns:
             list: List of generated MeshPoint objects.
@@ -120,7 +124,11 @@ class RBFMesh:
         points_allocation = calculate_point_allocation(self.region_polygons, num_points)
 
         # Step 2: Generate points
-        self.Points.extend(generate_points_within_polygons(self.region_polygons, points_allocation, boundary_distance))
+        points = generate_points_within_polygons(self.region_polygons, points_allocation, boundary_distance)
+        if append:
+            self.Points.extend(points)
+        else:
+            self.Points[:] = points
 
         return self.Points
 
@@ -199,8 +207,24 @@ def calculate_point_allocation(region_polygons, num_points):
     Returns:
         list: List of integers representing the point allocation for each outer polygon.
     """
-    total_area = sum(poly.area for poly in region_polygons)
-    return [int((poly.area / total_area) * num_points) for poly in region_polygons]
+    if isinstance(num_points, bool) or not isinstance(num_points, Integral) or num_points < 0:
+        raise ValueError('num_points must be a non-negative integer')
+    areas = [poly.area for poly in region_polygons]
+    if any(not math.isfinite(area) or area < 0 for area in areas):
+        raise ValueError('Region areas must be finite and non-negative')
+    if num_points == 0:
+        return [0] * len(areas)
+    total_area = sum(areas)
+    if not math.isfinite(total_area) or total_area <= 0:
+        raise ValueError('Cannot generate points without a positive-area region')
+    quotas = [area / total_area * num_points for area in areas]
+    allocation = [math.floor(quota) for quota in quotas]
+    # Largest remainders preserve the requested total, with stable tie-breaking.
+    remaining = int(num_points) - sum(allocation)
+    order = sorted(range(len(areas)), key=lambda i: quotas[i] - allocation[i], reverse=True)
+    for i in order[:remaining]:
+        allocation[i] += 1
+    return allocation
 
 
 def generate_regions(outer_polygons, hole_polygons):
@@ -243,11 +267,26 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
     Returns:
         list: List of generated MeshPoint objects.
     """
+    if not math.isfinite(boundary_distance) or boundary_distance < 0:
+        raise ValueError('boundary_distance must be finite and non-negative')
+    if len(region_polygons) != len(points_allocation):
+        raise ValueError('Each region must have a point allocation')
+    prepared_regions = []
+    for poly, num_pts in zip(region_polygons, points_allocation):
+        if isinstance(num_pts, bool) or not isinstance(num_pts, Integral) or num_pts < 0:
+            raise ValueError('Point allocations must be non-negative integers')
+        shrunk = poly.buffer(-boundary_distance) if num_pts else poly
+        if num_pts and (shrunk.is_empty or not shrunk.is_valid or
+                        not math.isfinite(shrunk.area) or shrunk.area <= 0):
+            raise ValueError('boundary_distance leaves no valid sampling area in a requested region')
+        prepared_regions.append(shrunk)
+
     points = []
     total_points_generated = 0
 
-    for i, (poly, num_pts) in enumerate(zip(region_polygons, points_allocation)):
-        poly = poly.buffer(-boundary_distance)  # Apply a buffer to slightly shrink the polygon
+    for i, (poly, num_pts) in enumerate(zip(prepared_regions, points_allocation)):
+        if num_pts == 0:
+            continue
         prepare(poly)  # Optional: prepare the polygon for faster operations if supported
         target_points_count = total_points_generated + num_pts
         min_x, min_y, max_x, max_y = poly.bounds
