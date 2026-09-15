@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="RBFMeshGen",
-    version="1.1.2",
+    version="1.1.3",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
     description="Generate random 2D point clouds within parametric geometric boundaries.",
