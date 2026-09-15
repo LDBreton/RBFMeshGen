@@ -105,7 +105,6 @@ Run the test suite after installing `.[qmc]`:
 
 **Publishing:** [GitHub Actions](.github/workflows/python-publish.yml) builds and
 uploads to PyPI when a `v*` tag is pushed. Update the version in `setup.py` and
-`.bumpversion.cfg` before tagging a new release. The workflow uses the repository
-secrets `PYPI_USERNAME` and `PYPI_PASSWORD`.
+`.bumpversion.cfg` before tagging a new release.
 
 RBFMeshGen generates point clouds; it does not currently implement RBF interpolation or element connectivity. Contributions are welcome under the [MIT License](License.txt).
