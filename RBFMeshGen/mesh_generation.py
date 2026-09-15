@@ -122,8 +122,7 @@ class RBFMesh:
             num_points (int): Number of points to generate.
             append (bool): Keep existing interior points (default True).
                 Set False to replace them after successful generation.
-            method (str): 'random', 'halton', or 'sobol'. QMC methods require
-                the optional scipy dependency: pip install 'RBFMeshGen[qmc]'.
+            method (str): 'random', 'halton', or 'sobol'.
             seed (int or None): Non-negative seed for a fresh sampler per call.
                 Reusing a seed reproduces points; use append=False to replace them.
 
@@ -303,8 +302,7 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
         try:
             from scipy.stats import qmc
         except ImportError as exc:
-            raise ImportError("Halton and Sobol require SciPy. Install with: pip install 'RBFMeshGen[qmc]' "
-                              "(or pip install -e '.[qmc]' from the repository)") from exc
+            raise ImportError('Halton and Sobol require SciPy. Reinstall with: pip install RBFMeshGen') from exc
         engine = qmc.Halton if method == 'halton' else qmc.Sobol
         # SciPy 1.15 renamed seed to rng; support older Python-compatible releases.
         import inspect

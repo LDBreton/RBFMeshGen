@@ -73,9 +73,9 @@ class SamplingTests(unittest.TestCase):
         for method in ('random', 'halton', 'sobol'):
             self.assertEqual(generate_points_within_polygons([], [], method=method), [])
 
-    def test_missing_optional_dependency_has_installation_hint(self):
+    def test_missing_scipy_has_installation_hint(self):
         with patch.dict('sys.modules', {'scipy.stats': None}):
-            with self.assertRaisesRegex(ImportError, 'qmc'):
+            with self.assertRaisesRegex(ImportError, 'pip install RBFMeshGen'):
                 generate_points_within_polygons([box(0, 0, 1, 1)], [10], method='halton')
             self.assertEqual(len(generate_points_within_polygons([box(0, 0, 1, 1)], [10])), 10)
 

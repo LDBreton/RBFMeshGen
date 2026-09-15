@@ -1,4 +1,4 @@
-"""Compare interior sampling methods. Install with: pip install -e '.[qmc]'."""
+"""Compare the random, Halton, and Sobol interior sampling methods."""
 import argparse
 import math
 

@@ -15,18 +15,20 @@ Define a domain, choose a sampler, and generate points with labeled boundaries�
 Install the published release from [PyPI](https://pypi.org/project/RBFMeshGen/):
 
 ```bash
-pip install "RBFMeshGen[qmc]"
+pip install RBFMeshGen
 ```
 
-Version **1.1.0** adds Halton and Sobol sampling alongside the geometry fixes.
-For an editable development installation, run from the cloned repository:
+Random, Halton, and Sobol are included in the standard installation. For an
+editable development installation, clone the repository and run:
 
 ```powershell
 py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[qmc]"
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
 ```
 
-Use any installed Python ≥ 3.9. On Linux/macOS, use `python3 -m venv .venv` and `.venv/bin/python`. Omit `[qmc]` if you only need random sampling.
+Use any installed Python ≥ 3.9. On Linux/macOS, activate the environment with
+`source .venv/bin/activate`.
 
 Create a circular domain with a hole:
 
@@ -51,8 +53,8 @@ plot_mesh(mesh)
 | `method` | Sampler | Dependency |
 | --- | --- | --- |
 | `"random"` | Pseudorandom; default | Base install |
-| `"halton"` | Scrambled Halton sequence | SciPy via `[qmc]` |
-| `"sobol"` | Scrambled Sobol sequence | SciPy via `[qmc]` |
+| `"halton"` | Scrambled Halton sequence | Standard install |
+| `"sobol"` | Scrambled Sobol sequence | Standard install |
 
 ```python
 mesh.generate_points(10000, method="sobol", seed=42, append=False)
@@ -79,7 +81,7 @@ Each point exposes `x`, `y`, `label`, and `is_border`. Set `Border(..., is_borde
 ## Examples
 
 ```powershell
-.\.venv\Scripts\python.exe .\examples\example_6_sampling.py
+python .\examples\example_6_sampling.py
 ```
 
 | Example | Domain |
@@ -97,10 +99,10 @@ Replace the filename to run another example. Close its Matplotlib window to fini
 
 The package has three core modules: [geometry](RBFMeshGen/geometry_utils.py), [generation](RBFMeshGen/mesh_generation.py), and [visualization](RBFMeshGen/visualization_tools.py).
 
-Run the test suite after installing `.[qmc]`:
+Run the test suite from an activated development environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
 **Publishing:** [GitHub Actions](.github/workflows/python-publish.yml) builds and

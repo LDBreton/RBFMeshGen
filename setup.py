@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="RBFMeshGen",
-    version="1.1.1",
+    version="1.1.2",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
     description="Generate random 2D point clouds within parametric geometric boundaries.",
@@ -13,9 +13,9 @@ setup(
     install_requires=[
         'numpy',        # For numerical operations
         'matplotlib>=3.6',   # Colormap registry and resampling APIs
-        'shapely>=2.0'       # prepare and contains_properly APIs
+        'shapely>=2.0',      # prepare and contains_properly APIs
+        'scipy>=1.9'         # Halton and Sobol sampling
     ],
-    extras_require={'qmc': ['scipy>=1.9']},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
