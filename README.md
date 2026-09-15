@@ -78,7 +78,10 @@ plot_mesh(random_mesh)
 
 `Border(n)` uses `abs(n)` segments; a negative value reverses traversal.
 Counterclockwise closed contours define regions, and clockwise contours define holes.
-`mesh.Points` holds interior points; `mesh.Boundary_Points` holds boundary points.
+`mesh.Points` holds interior points; `mesh.Boundary_Points` holds points on
+external boundaries and internal interfaces between regions. A border marked
+`is_border=False` does not contribute to `Boundary_Points`. Samples in areas
+removed by holes are excluded.
 Each point has `x`, `y`, `label`, and `is_border` attributes.
 
 `generate_points(n)` adds exactly `n` interior points, allocated by region area.
@@ -88,6 +91,34 @@ The count excludes boundary points. Set `random.seed(42)` before generation
 (after `import random`) for reproducible sampling.
 Invalid counts and a `boundary_distance` that eliminates a requested sampling
 region raise `ValueError` without replacing existing points.
+
+## Geometry validation and regions
+
+Borders must form directed closed contours. Their endpoints must match within
+`abs_tol` (default `1e-4`), which must be finite and positive. Open borders,
+incorrectly directed connections, non-finite coordinates, self-intersections,
+and zero-area contours raise `ValueError` instead of being silently ignored or
+repaired. Set each border's segment count with `border(n)` before constructing
+a mesh: `n` must be a non-zero integer, and each complete contour needs at least
+three distinct sampled points. Curves are validated at their sampled resolution.
+
+Shared borders are supported. At a junction, contour discovery chooses a shortest
+directed closing path in number of borders for each border, with input order
+breaking ties. For complex junctions, define separate closed contours when you
+need to specify the intended grouping explicitly.
+
+Nested and overlapping positive contours are partitioned into valid Polygon
+regions with no overlapping area. Edge and point contacts do not become regions.
+Three concentric positive contours produce three regions (two annuli and a disk).
+Their internal circular interfaces retain their requested border samples:
+for example, `Circle2(10000)` preserves 10,000 points on that interface when
+it remains entirely in the domain, including its original label.
+Clockwise contours are subtracted from every region, including when a hole
+completely removes a region. A cut that splits a region produces separate
+Polygon components. Region numbering can differ from previous releases.
+
+An empty resulting domain has no boundary points. Generating zero points is
+allowed; requesting a positive count raises `ValueError`.
 
 Run regression tests from the repository root:
 

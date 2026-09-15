@@ -14,7 +14,7 @@ Circle1 = Border(parametric_function=lambda t: circle_parametric_function(1, [0,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
-Circle2 = Border(parametric_function=lambda t: circle_parametric_function(0.8, [0, 0], t), label=1,
+Circle2 = Border(parametric_function=lambda t: circle_parametric_function(0.8, [0, 0], t), label=2,
                  t_start=0,
                  t_end=2.0 * np.pi)
 
@@ -23,7 +23,7 @@ Circle3 = Border(parametric_function=lambda t: circle_parametric_function(0.3, [
                  t_end=2.0 * np.pi)
 
 # Generate a random mesh
-random_mesh = RBFMesh(Circle1(100),Circle2(100),Circle3(100))
+random_mesh = RBFMesh(Circle1(100),Circle2(10000),Circle3(-100))
 
 # Generate points
 num_points = 10000

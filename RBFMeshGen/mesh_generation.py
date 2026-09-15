@@ -1,6 +1,7 @@
 from .geometry_utils import MeshPoint, find_polygons, Border
 from shapely.geometry import Polygon, Point
-from shapely.ops import unary_union
+from shapely.ops import unary_union, polygonize
+from shapely.validation import explain_validity
 from shapely import prepare
 import random
 import math
@@ -18,14 +19,14 @@ class RBFMesh:
     Attributes:
         borders (list): List of Border objects representing the borders of the polygons.
         Points (list): List of generated MeshPoint objects.
-        Boundary_Points (list): List of generated MeshPoint objects on the boundary.
+        Boundary_Points (list): Sampled border points on external or internal region boundaries.
         outer_polygons (list): List of outer Polygon objects.
         holes_polygons (list): List of hole Polygon objects.
         abs_tol (float): Absolute tolerance for geometric calculations.
     Methods:
         generate_points(num_points): Generates random points within the polygons.
 
-        find_and_orient_polygons(abs_tol): Finds and calculate the orientation of the polygons for the given borders.
+        process_polygons(): Validates contours and partitions the domain.
     """
 
     def __init__(self, *borders: Border, abs_tol=1e-04):
@@ -54,56 +55,60 @@ class RBFMesh:
            which are on boundary borders.
         3. Resolve overlaps among multiple polygons by calculating unique and intersecting areas.
         4. Subtracts hole polygons from outer polygons to finalize distinct regions.
-        5. Creates a unified region from these polygons to filter boundary points
-           accurately based on their proximity to the actual boundary.
+        5. Combines region boundaries, preserving internal interfaces, to filter
+           border samples that remain after hole subtraction.
 
         Modifies:
             self.outer_polygons: List of shapely.geometry.Polygon objects representing the outer boundaries.
             self.holes_polygons: List of shapely.geometry.Polygon objects representing the holes.
             self.region_polygons: List of shapely.geometry.Polygon objects representing the final regions
                                   after subtraction of holes from the outer polygons.
-            self.Boundary_Points: List of MeshPoint objects that are confirmed to be on the boundary of the
-                                  unified region, adjusted by the absolute tolerance.
+            self.Boundary_Points: Samples on any surviving region boundary,
+                                  including internal interfaces, within the absolute tolerance.
 
         This setup is crucial for ensuring that the subsequent point generation by `generate_points`
         occurs within properly defined and non-overlapping geometric regions.
         """
         polygons = find_polygons(self.borders, self.abs_tol)
 
-        # Generate points along borders and classify them
+        # Sample each input border once, even if multiple contours share it.
+        sampled = {id(border): border.generate_points() for border in self.borders}
         polygons_with_points = []
-        tentative_boundary_points = []
+        tentative_boundary_points = [point for border in self.borders if border.is_border
+                                     for point in sampled[id(border)]]
 
         for polygon in polygons:
             polygon_points = []
             for border in polygon:
-                border_point = border.generate_points()
-                if border.is_border:
-                    tentative_boundary_points.extend(border_point)
+                border_point = sampled[id(border)]
                 polygon_points.extend([(p.x, p.y) for p in border_point])  # Add to polygon definition
             polygons_with_points.append(polygon_points)
 
-        # Filter out the holes based on orientation
-        polygons = [Polygon(poly) for poly in polygons_with_points]
+        polygons = []
+        for index, coordinates in enumerate(polygons_with_points):
+            if len(set(coordinates)) < 3:
+                raise ValueError(f'Contour {index} needs at least three distinct sampled points; '
+                                 'increase its border segment counts')
+            polygon = Polygon(coordinates)
+            if not polygon.is_valid:
+                raise ValueError(f'Invalid contour {index}: {explain_validity(polygon)}')
+            if not math.isfinite(polygon.area) or polygon.area <= 0:
+                raise ValueError(f'Contour {index} must enclose a finite positive area')
+            polygons.append(polygon)
 
         # Determine orientation and classify as outer or holes
         self.outer_polygons = [poly for poly in polygons if poly.exterior.is_ccw]
         self.holes_polygons = [poly for poly in polygons if not poly.exterior.is_ccw]
 
-        # Step 1: Exclude nested polygons
-        self.outer_polygons = exclude_nested_polygons(self.outer_polygons)
-
-        # Step 1.5: Resolve overlaps among multiple polygons
+        # Partition all positive contours in one pass, including nested ones.
         self.outer_polygons = resolve_multiple_overlaps(self.outer_polygons)
 
         # Step 2: generate_regions
         self.region_polygons = generate_regions(self.outer_polygons, self.holes_polygons)
 
-        # Unify the regions for boundary check
-        unified_region = unary_union([p.buffer(0) for p in self.region_polygons])
-
-        # Filter boundary points that are actually on the boundary of the unified region
-        boundary_line = unified_region.boundary
+        # Union the boundary lines, not the region areas: merging areas would
+        # erase internal interfaces and discard their explicitly requested samples.
+        boundary_line = unary_union([region.boundary for region in self.region_polygons])
         self.Boundary_Points = [p for p in tentative_boundary_points if
                                 boundary_line.distance(Point(p.x, p.y)) < self.abs_tol]
 
@@ -133,11 +138,25 @@ class RBFMesh:
         return self.Points
 
 
+def _polygon_parts(geometry):
+    """Return valid positive-area Polygon components; ignore line/point contacts."""
+    if geometry.is_empty:
+        return []
+    if geometry.geom_type == 'Polygon':
+        if not geometry.is_valid:
+            raise ValueError(f'Invalid polygon: {explain_validity(geometry)}')
+        if not math.isfinite(geometry.area):
+            raise ValueError('Polygon area must be finite')
+        return [geometry] if geometry.area > 0 else []
+    if hasattr(geometry, 'geoms'):
+        return [part for child in geometry.geoms for part in _polygon_parts(child)]
+    return []
+
+
 def resolve_multiple_overlaps(polygons):
     """
-    Resolve overlaps among multiple polygons by calculating unique and intersecting areas.
-    This method ensures that intersections are only counted once by subtracting the cumulative
-    intersection areas found in previous steps from the current calculations.
+    Partition nested and overlapping polygons into disjoint positive-area faces.
+    Shared edges and point contacts are not regions. Existing holes are preserved.
 
     Args:
         polygons (list of shapely.geometry.Polygon): List of Polygon objects that might overlap.
@@ -145,55 +164,39 @@ def resolve_multiple_overlaps(polygons):
     Returns:
         list of shapely.geometry.Polygon: List of disjoint Polygon objects including unique areas and individual intersection areas without duplicates.
     """
-    unique_areas = []  # List to hold unique areas of each polygon
-    intersections = []  # List to hold intersections
-
-    # First, calculate the union of all polygons to get the complete coverage area
-    for i, polygon in enumerate(polygons):
-        # Calculate the intersection with the union of all other polygons
-        others = [p for j, p in enumerate(polygons) if j != i]
-        if others:
-            union_of_others = unary_union(others)
-            intersections_union = unary_union(intersections) if intersections else None
-
-            # Calculate the new intersection, ensuring no double-counting
-            new_intersection = polygon.intersection(union_of_others)
-            if intersections_union:
-                new_intersection = new_intersection.difference(intersections_union)
-
-            unique_area = polygon.difference(union_of_others)
-
-            if not new_intersection.is_empty:
-                intersections.append(new_intersection)
-            if not unique_area.is_empty:
-                unique_areas.append(unique_area)
-        else:
-            # If no other polygons, the polygon itself is unique
-            unique_areas.append(polygon)
-
-    # Combine unique areas and non-duplicated intersections into a single list
-    result = unique_areas + intersections
-
-    return result
+    polygons = [part for polygon in polygons for part in _polygon_parts(polygon)]
+    if not polygons:
+        return []
+    # Noding boundaries before polygonizing creates disjoint planar faces.
+    linework = unary_union([polygon.boundary for polygon in polygons])
+    domain = unary_union(polygons)
+    return [face for face in polygonize(linework)
+            if face.area > 0 and domain.covers(face.representative_point())]
 
 
 def exclude_nested_polygons(outer_polygons):
     """
-    refactor the nested polygons into disjoint polygons.
+    Subtract contained polygons using the original containment relationships.
+    This handles nesting and duplicates; use resolve_multiple_overlaps for
+    partially overlapping inputs.
 
     Args:
         outer_polygons (list): List of outer Polygon objects.
 
     Returns:
-        list: List of outer Polygon objects with nested polygons excluded.
+        list: Polygon components with contained areas removed from their parents.
     """
-    # Sort polygons by area in descending order to handle larger polygons first
-    outer_polygons = sorted(outer_polygons, key=lambda p: abs(p.area), reverse=True)
-    for i in range(len(outer_polygons)):
-        for j in range(i + 1, len(outer_polygons)):
-            if outer_polygons[i].contains(outer_polygons[j]):
-                outer_polygons[i] = outer_polygons[i].difference(outer_polygons[j])
-    return outer_polygons
+    polygons = [part for polygon in outer_polygons for part in _polygon_parts(polygon)]
+    unique = []
+    for polygon in sorted(polygons, key=lambda p: p.area, reverse=True):
+        if not any(polygon.equals(other) for other in unique):
+            unique.append(polygon)
+    result = []
+    # Compare against the original polygons, not already-subtracted shells.
+    for i, polygon in enumerate(unique):
+        children = [other for other in unique[i + 1:] if polygon.covers(other)]
+        result.extend(_polygon_parts(polygon.difference(unary_union(children))))
+    return result
 
 
 def calculate_point_allocation(region_polygons, num_points):
@@ -229,7 +232,8 @@ def calculate_point_allocation(region_polygons, num_points):
 
 def generate_regions(outer_polygons, hole_polygons):
     """
-    Generates the regions by subtracting hole polygons from outer polygons.
+    Subtract all holes without mutating the input list. Fully removed regions
+    disappear, and disconnected results become separate Polygon components.
 
     Args:
         outer_polygons (list): List of outer Polygon objects.
@@ -238,21 +242,10 @@ def generate_regions(outer_polygons, hole_polygons):
     Returns:
         list: List of modified outer Polygon objects.
     """
-    # Iterate over each outer polygon by index
-    for i, poly in enumerate(outer_polygons):
-        # Attempt to subtract each hole one by one
-        for hole in hole_polygons:
-            # Try subtracting the hole from the current polygon
-            test_diff = poly.difference(hole)
-
-            # Only update the polygon if the resulting polygon is valid and not empty
-            if not test_diff.is_empty and test_diff.is_valid:
-                poly = test_diff  # Update the poly to the newly modified polygon
-
-        # Assign the modified or unmodified polygon back to the list
-        outer_polygons[i] = poly
-
-    return outer_polygons
+    holes = unary_union([part for hole in hole_polygons for part in _polygon_parts(hole)])
+    return [part for polygon in outer_polygons
+            for outer in _polygon_parts(polygon)
+            for part in _polygon_parts(outer.difference(holes))]
 
 
 def generate_points_within_polygons(region_polygons, points_allocation, boundary_distance=1.0e-5):

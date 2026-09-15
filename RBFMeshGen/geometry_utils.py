@@ -1,4 +1,17 @@
 import numpy as np
+from collections import deque
+from numbers import Integral
+
+
+def _coordinates(value, label):
+    """Validate a parametric function result before geometric processing."""
+    try:
+        coordinates = np.asarray(value, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f'Border {label!r} must return two finite coordinates') from exc
+    if coordinates.shape != (2,) or not np.isfinite(coordinates).all():
+        raise ValueError(f'Border {label!r} must return two finite coordinates')
+    return tuple(coordinates)
 
 
 class MeshPoint:
@@ -35,8 +48,8 @@ class Border:
         self.t_start = t_start
         self.t_end = t_end
         # Calculate start and end points using the parametric function
-        self.start_point = parametric_function(t_start)
-        self.end_point = parametric_function(t_end)
+        self.start_point = _coordinates(parametric_function(t_start), label)
+        self.end_point = _coordinates(parametric_function(t_end), label)
         self.is_border = is_border
         self.n_segments = None
         self.reverse = False  # Attribute to control direction
@@ -51,15 +64,17 @@ class Border:
         Returns:
             Border: The updated Border object.
         """
-        self.n_segments = n
+        if isinstance(n, bool) or not isinstance(n, Integral) or n == 0:
+            raise ValueError('The number of border segments must be a non-zero integer')
+        self.n_segments = int(n)
         self.reverse = n < 0  # Set reverse flag based on the sign of n
         # Reverse start and end if n is negative
         if self.reverse:
-            self.start_point = self.parametric_function(self.t_end)
-            self.end_point = self.parametric_function(self.t_start)
+            self.start_point = _coordinates(self.parametric_function(self.t_end), self.label)
+            self.end_point = _coordinates(self.parametric_function(self.t_start), self.label)
         else:
-            self.start_point = self.parametric_function(self.t_start)
-            self.end_point = self.parametric_function(self.t_end)
+            self.start_point = _coordinates(self.parametric_function(self.t_start), self.label)
+            self.end_point = _coordinates(self.parametric_function(self.t_end), self.label)
         return self
 
     def get_midpoint(self):
@@ -79,10 +94,12 @@ class Border:
         Returns:
             list: A list of MeshPoint objects representing the generated points.
         """
+        if self.n_segments is None:
+            raise ValueError(f'Border {self.label!r} needs a segment count: call border(n) first')
         t_values = np.linspace(self.t_start, self.t_end, abs(self.n_segments) + 1, endpoint=True)
         points = [
             MeshPoint(x, y, self.label, self.is_border)
-            for x, y in [self.parametric_function(t) for t in t_values]
+            for x, y in [_coordinates(self.parametric_function(t), self.label) for t in t_values]
         ]
         return points[:-1] if not self.reverse else points[::-1][:-1]
 
@@ -135,7 +152,11 @@ def is_close(point1, point2, tolerance=1e-6):
 
 def find_polygons(borders: list[Border], tolerance=1e-6):
     """
-    Finds polygons formed by connected borders.
+    Find directed closed contours without discarding open borders.
+
+    For shared junctions, each border uses a shortest directed closing path
+    (in number of borders). Duplicate cycles are removed. Input order breaks
+    ties; border direction is never silently reversed.
 
     Args:
         borders (list[Border]): A list of Border objects representing the borders.
@@ -144,38 +165,44 @@ def find_polygons(borders: list[Border], tolerance=1e-6):
     Returns:
         list: A list of lists, where each inner list represents a group of connected borders forming a polygon.
     """
-    standalone_polygons = []
-    polygon_groups = []
-    open_borders = []
-
-    # Separate standalone polygons and open borders
-    for border in borders:
-        if is_close(border.start_point, border.end_point, tolerance):
-            standalone_polygons.append([border])
-        else:
-            open_borders.append(border)
-
-    # Form polygons from connected borders
-    while open_borders:
-        current = open_borders.pop(0)
-        polygon = [current]
-        found_multiple, next_border = find_next_border(current.end_point, open_borders, tolerance)
-        if found_multiple:
-            open_borders.append(current)
-        while next_border:
-            current = next_border
-            open_borders.remove(current)
-            polygon.append(current)
-            found_multiple, next_border = find_next_border(current.end_point, open_borders, tolerance)
-            if found_multiple:
-                open_borders.append(current)
-            # Close the loop if it connects back to the start
-            if next_border and is_close(next_border.end_point, polygon[0].start_point, tolerance):
-                polygon.append(next_border)
+    if not np.isfinite(tolerance) or tolerance <= 0:
+        raise ValueError('tolerance must be finite and positive')
+    if any(not isinstance(border, Border) for border in borders):
+        raise TypeError('All contours must be Border objects')
+    if len({id(border) for border in borders}) != len(borders):
+        raise ValueError('The same Border object was supplied more than once')
+    successors = [
+        [j for j, other in enumerate(borders)
+         if is_close(border.end_point, other.start_point, tolerance)]
+        for border in borders
+    ]
+    contours = []
+    seen = set()
+    for start, border in enumerate(borders):
+        queue = deque([start])
+        parents = {start: None}
+        end = None
+        while queue:
+            current = queue.popleft()
+            if is_close(borders[current].end_point, border.start_point, tolerance):
+                end = current
                 break
-
-        if is_close(polygon[0].start_point, polygon[-1].end_point, tolerance):
-            polygon_groups.append(polygon)
-
-    return standalone_polygons + polygon_groups
-
+            for candidate in successors[current]:
+                if candidate not in parents:
+                    parents[candidate] = current
+                    queue.append(candidate)
+        if end is None:
+            raise ValueError(f'Border {border.label!r} (index {start}) is not part of a closed directed contour; '
+                             'check endpoints, orientation, and tolerance')
+        cycle = []
+        while end is not None:
+            cycle.append(end)
+            end = parents[end]
+        cycle.reverse()
+        # Canonical rotation retains direction and shared-border cycles.
+        pivot = cycle.index(min(cycle))
+        key = tuple(cycle[pivot:] + cycle[:pivot])
+        if key not in seen:
+            seen.add(key)
+            contours.append([borders[i] for i in key])
+    return contours
