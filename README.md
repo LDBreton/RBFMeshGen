@@ -18,18 +18,6 @@ Install the published release from [PyPI](https://pypi.org/project/RBFMeshGen/):
 pip install RBFMeshGen
 ```
 
-Random, Halton, and Sobol are included in the standard installation. For an
-editable development installation, clone the repository and run:
-
-```powershell
-py -3.13 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-```
-
-Use any installed Python ≥ 3.9. On Linux/macOS, activate the environment with
-`source .venv/bin/activate`.
-
 Create a circular domain with a hole:
 
 ```python
@@ -105,8 +93,5 @@ Run the test suite from an activated development environment:
 python -m unittest discover -s tests -v
 ```
 
-**Publishing:** [GitHub Actions](.github/workflows/python-publish.yml) builds and
-uploads to PyPI when a `v*` tag is pushed. Update the version in `setup.py` and
-`.bumpversion.cfg` before tagging a new release.
 
 RBFMeshGen generates point clouds; it does not currently implement RBF interpolation or element connectivity. Contributions are welcome under the [MIT License](License.txt).
