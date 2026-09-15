@@ -4,3 +4,5 @@ __pycache__/
 RBFMeshGen.egg-info/
 .venv/
 .vscode/
+build/
+dist/

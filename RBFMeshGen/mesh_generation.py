@@ -2,7 +2,7 @@ from .geometry_utils import MeshPoint, find_polygons, Border
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union, polygonize
 from shapely.validation import explain_validity
-from shapely import prepare
+from shapely import prepare, contains_xy
 import random
 import math
 from numbers import Integral
@@ -112,7 +112,8 @@ class RBFMesh:
         self.Boundary_Points = [p for p in tentative_boundary_points if
                                 boundary_line.distance(Point(p.x, p.y)) < self.abs_tol]
 
-    def generate_points(self, num_points, boundary_distance=1.0e-5, *, append=True):
+    def generate_points(self, num_points, boundary_distance=1.0e-5, *, append=True,
+                        method='random', seed=None):
         """
         Generates random points within the polygons defined by the borders.
 
@@ -121,6 +122,10 @@ class RBFMesh:
             num_points (int): Number of points to generate.
             append (bool): Keep existing interior points (default True).
                 Set False to replace them after successful generation.
+            method (str): 'random', 'halton', or 'sobol'. QMC methods require
+                the optional scipy dependency: pip install 'RBFMeshGen[qmc]'.
+            seed (int or None): Non-negative seed for a fresh sampler per call.
+                Reusing a seed reproduces points; use append=False to replace them.
 
         Returns:
             list: List of generated MeshPoint objects.
@@ -129,7 +134,8 @@ class RBFMesh:
         points_allocation = calculate_point_allocation(self.region_polygons, num_points)
 
         # Step 2: Generate points
-        points = generate_points_within_polygons(self.region_polygons, points_allocation, boundary_distance)
+        points = generate_points_within_polygons(
+            self.region_polygons, points_allocation, boundary_distance, method=method, seed=seed)
         if append:
             self.Points.extend(points)
         else:
@@ -248,7 +254,8 @@ def generate_regions(outer_polygons, hole_polygons):
             for part in _polygon_parts(outer.difference(holes))]
 
 
-def generate_points_within_polygons(region_polygons, points_allocation, boundary_distance=1.0e-5):
+def generate_points_within_polygons(region_polygons, points_allocation, boundary_distance=1.0e-5,
+                                    *, method='random', seed=None):
     """
     Generates random points within the outer polygons.
 
@@ -256,10 +263,23 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
         region_polygons (list): List of outer Polygon objects.
         points_allocation (list): List of integers representing the point allocation for each outer polygon.
         boundary_distance (float, optional): Distance to buffer the polygons. Defaults to 1.0e-5.
+        method (str): 'random' (default), scrambled 'halton', or scrambled 'sobol'.
+        seed (int or None): Non-negative seed, reset on each call. With random
+            sampling and no seed, the global random state is used as before.
+
+    QMC candidates are mapped from the unit square to each region's bounding
+    box and rejected outside the buffered region. This preserves exact counts,
+    but clipping/truncation does not preserve Sobol's power-of-two balance.
 
     Returns:
         list: List of generated MeshPoint objects.
     """
+    if method not in ('random', 'halton', 'sobol'):
+        raise ValueError("method must be 'random', 'halton', or 'sobol'")
+    if seed is not None:
+        if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
+            raise ValueError('seed must be a non-negative integer or None')
+        seed = int(seed)
     if not math.isfinite(boundary_distance) or boundary_distance < 0:
         raise ValueError('boundary_distance must be finite and non-negative')
     if len(region_polygons) != len(points_allocation):
@@ -274,6 +294,23 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
             raise ValueError('boundary_distance leaves no valid sampling area in a requested region')
         prepared_regions.append(shrunk)
 
+    if not any(points_allocation):
+        return []
+
+    sampler = None
+    rng = random if seed is None else random.Random(seed)
+    if method != 'random':
+        try:
+            from scipy.stats import qmc
+        except ImportError as exc:
+            raise ImportError("Halton and Sobol require SciPy. Install with: pip install 'RBFMeshGen[qmc]' "
+                              "(or pip install -e '.[qmc]' from the repository)") from exc
+        engine = qmc.Halton if method == 'halton' else qmc.Sobol
+        # SciPy 1.15 renamed seed to rng; support older Python-compatible releases.
+        import inspect
+        options = {'rng': seed} if 'rng' in inspect.signature(engine).parameters else {'seed': seed}
+        sampler = engine(d=2, scramble=True, **options)
+
     points = []
     total_points_generated = 0
 
@@ -285,11 +322,21 @@ def generate_points_within_polygons(region_polygons, points_allocation, boundary
         min_x, min_y, max_x, max_y = poly.bounds
 
         while len(points) < target_points_count:
-            x = random.uniform(min_x, max_x)
-            y = random.uniform(min_y, max_y)
-            point = Point(x, y)
-            if poly.contains_properly(point):
-                points.append(MeshPoint(x, y, f'region {i + 1}', False))
+            if sampler is None:
+                x = rng.uniform(min_x, max_x)
+                y = rng.uniform(min_y, max_y)
+                if poly.contains_properly(Point(x, y)):
+                    points.append(MeshPoint(x, y, f'region {i + 1}', False))
+            else:
+                # Fixed power-of-two blocks keep memory bounded and avoid the
+                # first-draw Sobol warning for arbitrary requested point counts.
+                candidates = sampler.random(1024)
+                x = min_x + candidates[:, 0] * (max_x - min_x)
+                y = min_y + candidates[:, 1] * (max_y - min_y)
+                inside = contains_xy(poly, x, y)
+                remaining = target_points_count - len(points)
+                points.extend(MeshPoint(px, py, f'region {i + 1}', False)
+                              for px, py in zip(x[inside][:remaining], y[inside][:remaining]))
 
         total_points_generated += num_pts
 
