@@ -68,6 +68,14 @@ Each point exposes `x`, `y`, `label`, and `is_border`. Set `Border(..., is_borde
 
 ## Examples
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/airfoil_domain.png" alt="Airfoil inside a circular domain"><br><strong>Airfoil domain</strong></td>
+    <td align="center"><img src="docs/images/overlapping_regions.png" alt="Three overlapping circular regions"><br><strong>Overlapping regions</strong></td>
+    <td align="center"><img src="docs/images/internal_interfaces.png" alt="Concentric internal interface and central hole"><br><strong>Interfaces & holes</strong></td>
+  </tr>
+</table>
+
 ```powershell
 python .\examples\example_6_sampling.py
 ```
@@ -92,6 +100,3 @@ Run the test suite from an activated development environment:
 ```powershell
 python -m unittest discover -s tests -v
 ```
-
-
-RBFMeshGen generates point clouds; it does not currently implement RBF interpolation or element connectivity. Contributions are welcome under the [MIT License](License.txt).
