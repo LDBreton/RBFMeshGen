@@ -1,6 +1,6 @@
 # RBFMeshGen
 
-**2D point clouds from parametric boundaries.**
+**2D point clouds from parametric boundaries and 3D point clouds from implicit regions.**
 
 Random · Halton · Sobol &nbsp; | &nbsp; Python ≥ 3.9 &nbsp; | &nbsp; [MIT License](License.txt)
 
@@ -90,6 +90,43 @@ python .\examples\example_6_sampling.py
 | [06 · Sampling comparison](examples/example_6_sampling.py) | Random, Halton, and Sobol side by side |
 
 Replace the filename to run another example. Close its Matplotlib window to finish.
+
+## 3D implicit regions
+
+Generate an unconnected 3D point cloud directly inside a primitive:
+
+```python
+from RBFMeshGen import RBFMesh3D, Sphere
+
+mesh = RBFMesh3D(Sphere(center=(0, 0, 0), radius=1, label="fluid"))
+mesh.generate_points(10000, method="halton", seed=42)
+mesh.generate_boundary_points(1000, method="halton", seed=42)
+```
+
+Or describe a custom volume with a function whose negative values are inside:
+
+```python
+from RBFMeshGen import ImplicitRegion, RBFMesh3D
+
+region = ImplicitRegion(
+    lambda x, y, z: x*x + y*y + z*z - 1,
+    bounds=[(-1, 1), (-1, 1), (-1, 1)],
+)
+mesh = RBFMesh3D(region)
+mesh.generate_points(10000, method="sobol", seed=42)
+```
+
+`Sphere`, `Box`, and axis-aligned `Cylinder` provide exact volumes and physical
+boundary-clearance support. Generic implicit regions are sampled directly from
+their bounds; when several are supplied, their volumes are estimated for point
+allocation unless an exact `volume=` is provided.
+
+Boundary nodes are generated explicitly and kept in `mesh.Boundary_Points`.
+Every boundary node has `is_border=True`, a `boundary_label`, and an outward
+unit `normal`. Boxes support labels for `xmin`, `xmax`, `ymin`, `ymax`, `zmin`,
+and `zmax`; cylinders support `side`, `bottom`, and `top`. Custom implicit
+regions are projected onto the zero level set, using an analytic `gradient=`
+when supplied or a finite-difference gradient otherwise.
 
 ## Development
 

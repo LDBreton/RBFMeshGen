@@ -5,7 +5,7 @@ setup(
     version="1.1.3",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
-    description="Generate random 2D point clouds within parametric geometric boundaries.",
+    description="Generate 2D and 3D point clouds within bounded geometric regions.",
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/LDBreton/RBFMeshGen",
