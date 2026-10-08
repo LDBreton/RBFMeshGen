@@ -1,5 +1,11 @@
 # RBFMeshGen
 
+> **RBFMeshGen is now part of [RBFLAB](https://github.com/LDBreton/RBFLAB), starting with version 0.2.0.**
+> New development continues in RBFLAB, combining geometry and node generation with RBF interpolation and PDE solvers.
+> Install with `python -m pip install rbflab` (Python 3.11+).
+> See the [geometry guide](https://ldbreton.github.io/RBFLAB/geometry/) and [migration guide](https://ldbreton.github.io/RBFLAB/geometry/migration/).
+> This repository and its existing releases remain available as the historical standalone implementation.
+
 **2D point clouds from parametric boundaries.**
 
 Random · Halton · Sobol &nbsp; | &nbsp; Python ≥ 3.9 &nbsp; | &nbsp; [MIT License](License.txt)
