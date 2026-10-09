@@ -1,4 +1,31 @@
-# RBFMeshGen
+# RBFMeshGen — development moved to RBFLAB
+
+> **RBFMeshGen has moved to [RBFLAB](https://github.com/LDBreton/RBFLAB).**
+> Geometry and node generation are now maintained in `rbflab.geometry` and
+> `rbflab.meshgen`, alongside symbolic PDEs, interpolation and RBF methods.
+> For new projects, install `rbflab` and start with the
+> [geometry cookbook](https://ldbreton.github.io/RBFLAB/geometry/cookbook/).
+>
+> This 1.1.4 maintenance release only updates the package description and release
+> metadata. Its Python implementation and dependencies are unchanged from 1.1.3.
+> Existing `RBFMeshGen` imports continue to work. RBFLAB requires Python 3.11+
+> and uses a different public API; it is not a drop-in import rename.
+
+```sh
+python -m pip install rbflab
+```
+
+```python
+from rbflab import geometry, meshgen
+cloud = meshgen.generate(geometry.Annulus(), interior=240, boundary=144, seed=42)
+```
+
+[RBFLAB documentation](https://ldbreton.github.io/RBFLAB/) ·
+[Historical migration notes](https://ldbreton.github.io/RBFLAB/geometry/migration/)
+
+---
+
+## Legacy RBFMeshGen documentation
 
 **2D point clouds from parametric boundaries.**
 

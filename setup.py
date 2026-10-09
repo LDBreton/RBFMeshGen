@@ -2,13 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="RBFMeshGen",
-    version="1.1.3",
+    version="1.1.4",
     author="Louis Breton",
     author_email="louis.breton@ciencias.unam.mx",
-    description="Generate random 2D point clouds within parametric geometric boundaries.",
+    description="RBFMeshGen has moved to RBFLAB; legacy 2D point-cloud generation.",
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/LDBreton/RBFMeshGen",
+    project_urls={"Successor": "https://pypi.org/project/rbflab/",
+                  "RBFLAB documentation": "https://ldbreton.github.io/RBFLAB/"},
     packages=find_packages(),
     install_requires=[
         'numpy',        # For numerical operations
